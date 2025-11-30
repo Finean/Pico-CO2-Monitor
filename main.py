@@ -503,9 +503,10 @@ async def main():
     io_task = asyncio.create_task(navigate(set_state, get_values))
     
     while True:
-        args[0] = await read_sensor()
+        co2, temperature, humidity = await read_sensor()
         if last_reading != 0:
-            last_reading, args[0][0] = args[0][0], (args[0][0] + last_reading) / 2
+            last_reading, co2 = co2, (co2 + last_reading) / 2
+        args[0] = (co2, temperature, humidity)
         ctr += 1
         c_time = time.time()
         
