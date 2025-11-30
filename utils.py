@@ -150,6 +150,9 @@ def update_cfg(field, value):
         #Avoid colour conflicts
         if field == "font_colour" and value == config["bg_colour"]:
             config["bg_colour"] = invert[value]
+            for j in ("axis_colour", "line_colour", "max_colour", "min_colour"):
+                if invert[value] == config[j]:
+                    config[j] = value
         if field == "bg_colour":
             for j in ("font_colour", "axis_colour", "line_colour", "max_colour", "min_colour"):
                 if value == config[j]:
@@ -171,5 +174,4 @@ else:
 if config["bg_colour"] == config["font_colour"]:
     print("Colour conflict, reverting to default")
     update_cfg("bg_colour", "BLACK")
-
     update_cfg("font_colour", "WHITE")
