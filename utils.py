@@ -112,7 +112,7 @@ setting_values = {"24hr": [True, False],
 pages = (
         ("24hr", "celsius", "leading_zeros", "ntc_upd", "font_colour", "bg_colour"),
         ("graph", "graph_axes", "graph_show_pts", "graph_max_time", "graph_padding", "axis_colour", "line_colour", "max_colour", "min_colour"),
-        (f"Version: {VER}", f"SSID: {NET_SSID}", f"PSK: {NET_PSK}", "Display: 320x240", "Programmed by a goblin who should have just", "used C++ or Rust", "Made with Micropython")
+        (f"Version: {VER}", f"SSID: {NET_SSID}", f"PSK: {NET_PSK}", "Display: 320x240", "Made with Micropython")
         )
 
 
@@ -171,4 +171,5 @@ else:
 if config["bg_colour"] == config["font_colour"]:
     print("Colour conflict, reverting to default")
     update_cfg("bg_colour", "BLACK")
+
     update_cfg("font_colour", "WHITE")
