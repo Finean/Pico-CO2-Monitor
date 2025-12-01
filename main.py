@@ -177,7 +177,7 @@ def fahrenheit(celsius):
 def draw_graph(buffer, data, x, y, w, h, draw_line = True):
     global WIDTH
     global HEIGHT
-    data_range = [500, 5000]
+    data_range = [400, 5000]
     graph = utils.config["graph"]
     graph_max_time = utils.config["graph_max_time"]
     graph_axes = utils.config["graph_axes"]
@@ -215,7 +215,7 @@ def draw_graph(buffer, data, x, y, w, h, draw_line = True):
 
     #Trim data to required time scale
     idx_offset = 0
-    cur_time = 600
+    cur_time = time.time()
     for ix, val in enumerate(data):
         if (cur_time - val[1]) // 60 > graph_max_time:
             idx_offset = ix + 1
@@ -223,7 +223,7 @@ def draw_graph(buffer, data, x, y, w, h, draw_line = True):
             break     
     data = data[idx_offset:]
     
-    max_val = (500, 0)
+    max_val = (400, 0)
     min_val = (5000, 0)
     #Find min/max values
     for ix, val in enumerate(data):
@@ -233,7 +233,7 @@ def draw_graph(buffer, data, x, y, w, h, draw_line = True):
             max_val = (val[0], ix)
        
     delta_time = max(data[-1][1] - data[0][1], 1) #Seconds
-    plot_bounds = (max(400, min_val[0] - graph_padding), min(5500, max_val[0] + graph_padding))
+    plot_bounds = (max(350, min_val[0] - graph_padding), min(5500, max_val[0] + graph_padding))
             
     #Draw axes and labels
     if graph_axes:
@@ -612,3 +612,4 @@ init()
 #asyncio.run(render(None, None, mode = "test"))
 clear()
 asyncio.run(main())
+
