@@ -3,13 +3,14 @@ import font_lib as font
 import framebuf
 import gc
 import _thread
+import random
 import uasyncio as asyncio
 import utils
 
 from pimoroni_i2c import PimoroniI2C
 from pimoroni import BREAKOUT_GARDEN_I2C_PINS, RGBLED 
 from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY_2, PEN_RGB565
-from machine import Pin, RTC
+from machine import Pin, RTC, reset
 
 #Telem
 import time
@@ -148,7 +149,7 @@ async def init_screen(buffer, args = ([0, 0, 0], [])):
     for j in range(min(init_s_reads, len(sensor_reads))):
         font.text(buffer, f"SCD41 I2C Read: {sensor_reads[j]}", 5, 37 + 8 * j, 1, 0xffff)
     if len(sensor_reads) >= init_s_reads:
-        font.text(buffer, "Booting...", 5, 37 + 8 * init_s_reads, 1, 0xffff)
+        font.text(buffer, "Launching...", 5, 37 + 8 * init_s_reads, 1, 0xffff)
     
 
 async def draw_test(buffer, t, fps = 0):
@@ -177,7 +178,7 @@ def fahrenheit(celsius):
 def draw_graph(buffer, data, x, y, w, h, draw_line = True):
     global WIDTH
     global HEIGHT
-    data_range = [400, 5000]
+    data_range = [0, 5000]
     graph = utils.config["graph"]
     graph_max_time = utils.config["graph_max_time"]
     graph_axes = utils.config["graph_axes"]
@@ -223,7 +224,7 @@ def draw_graph(buffer, data, x, y, w, h, draw_line = True):
             break     
     data = data[idx_offset:]
     
-    max_val = (400, 0)
+    max_val = (0, 0)
     min_val = (5000, 0)
     #Find min/max values
     for ix, val in enumerate(data):
@@ -233,7 +234,7 @@ def draw_graph(buffer, data, x, y, w, h, draw_line = True):
             max_val = (val[0], ix)
        
     delta_time = max(data[-1][1] - data[0][1], 1) #Seconds
-    plot_bounds = (max(350, min_val[0] - graph_padding), min(5500, max_val[0] + graph_padding))
+    plot_bounds = (max(300, min_val[0] - graph_padding), min(5500, max_val[0] + graph_padding))
             
     #Draw axes and labels
     if graph_axes:
@@ -258,9 +259,9 @@ def draw_graph(buffer, data, x, y, w, h, draw_line = True):
     for ix, data_point in enumerate(data):
         x_val = int(bounds[0] + ((data_point[1] - data[0][1]) / (delta_time)) * (bounds[2] - bounds[0]))
         try:
-            y_val = int(bounds[3] - ((data_point[0] - plot_bounds[0]) / (plot_bounds[1] - plot_bounds[0])) * (bounds[3] - bounds[1]))
+            y_val = max(0, int(bounds[3] - ((data_point[0] - plot_bounds[0]) / (plot_bounds[1] - plot_bounds[0])) * (bounds[3] - bounds[1])))
         except:
-            y_val = int(bounds[3] + (bounds[3] - bounds[1]) // 2)
+            y_val = max(0, int(bounds[3] + (bounds[3] - bounds[1]) // 2))
         
         #Draw line
         if not(prev is None):
@@ -383,7 +384,20 @@ async def program_draw(buffer, get_values):
                     font.text(buffer, f"{str(utils.config[key])}", 250, 45 + 12 * ix, 1, font_colour)
         else:
             for ix, text in enumerate(pages[page]):
-                font.text(buffer, f"{text}", 30, 45 + 12 * ix, 1, font_colour)  
+                font.text(buffer, f"{text}", 30, 45 + 12 * ix, 1, font_colour)
+    elif state[0] == "shutdown":
+        buffer.rect(40, 40, 320 - 2 * 40, 240 - 2 * 40, bg_colour, True)
+        buffer.rect(40, 40, 320 - 2 * 40, 240 - 2 * 40, font_colour, False)
+        font.text(buffer, "Restart device", 84, 80, 2, font_colour)
+        font.text(buffer, "Yes", 95, 147, 2, font_colour)
+        font.text(buffer, "No", 200, 147, 2, font_colour)
+        font.text(buffer, f"A:Next   B:Prev   X:Accept Y:Cancel", 55, 185, 1, font_colour)
+        buffer.rect(70, 135, 80, 40, font_colour, False)
+        buffer.rect(170, 135, 80, 40, font_colour, False)
+        if state[1] == 0:
+            buffer.rect(175, 140, 70, 30, font_colour, False)
+        elif state[1] == 1:
+            buffer.rect(75, 140, 70, 30, font_colour, False)
         
         
 def conv_scroll(x, page_sizes = (6, 9, 1)):
@@ -422,6 +436,9 @@ async def navigate(set_state, get_values):
                 set_state(["settings_adj", menu_state[1]])
                 active_set = None
                 temp_setting = "Err"
+            elif menu_state[0] == "shutdown" and menu_state[1] == 1:
+                set_state(["main", 0])
+                reset()
             else:
                 set_state(["main", main_state])
                 
@@ -443,6 +460,10 @@ async def navigate(set_state, get_values):
                 set_state(["settings_adj", menu_state[1]])
                 active_set = None
                 temp_setting = "Err"
+            elif menu_state[0] == "main":
+                set_state(["shutdown", 0])
+            elif menu_state[0] == "shutdown":
+                set_state(["main", 0])
                 
         if button_b.value() == 0:
             press = True
@@ -450,6 +471,8 @@ async def navigate(set_state, get_values):
                 max_scroll = 3
             elif menu_state[0] == "adjust":
                 max_scroll = len(poss_setting)
+            elif menu_state[0] == "shutdown":
+                max_scroll = 2
             else:
                 max_scroll = 16
             
@@ -465,6 +488,8 @@ async def navigate(set_state, get_values):
                 max_scroll = 3
             elif menu_state[0] == "adjust":
                 max_scroll = len(poss_setting)
+            elif menu_state[0] == "shutdown":
+                max_scroll = 2
             else:
                 max_scroll = 16
                 
@@ -503,14 +528,19 @@ async def main():
     io_task = asyncio.create_task(navigate(set_state, get_values))
     
     while True:
-        co2, temperature, humidity = await read_sensor()
+        try:
+            co2, temperature, humidity = await read_sensor()
+        except:
+            print("Invalid Read")
+            continue
         if last_reading != 0:
             last_reading, co2 = co2, (co2 + last_reading) / 2
         args[0] = (co2, temperature, humidity)
         ctr += 1
         c_time = time.time()
         
-        if len(data) < 50:
+        
+        if len(data) < 120:
             data.append((int(args[0][0]), c_time))
             ctr = 0
         else:
@@ -518,11 +548,20 @@ async def main():
                 data.pop(0)
                 data.append((int(args[0][0]), c_time))
                 ctr = 0
-            elif (5 * ctr) > (c_time - data[0][1]) // 50:
-                data.pop(1)
+            elif (5 * ctr) > (c_time - data[0][1]) // 120:
+                max_val = max(x[0] for x in data)
+                min_val = min(x[0] for x in data)
+                while True:
+                    idx = random.randint(1, 119)
+                    if data[idx] == max_val or data[idx] == min_val:
+                        continue
+                    data.pop(idx)
+                    break
                 data.append((int(args[0][0]), c_time))
                 ctr = 0
         args[1] = data
+        gc.collect()
+    
     
 def parse_time():
     _, _, _, _, hour, minute, second, _ = machine.RTC().datetime()
@@ -612,4 +651,5 @@ init()
 #asyncio.run(render(None, None, mode = "test"))
 clear()
 asyncio.run(main())
+
 

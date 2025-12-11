@@ -8,9 +8,9 @@ import time
 rtc = machine.RTC()
 connection = None
 
-VER = "1.0 - 30th November 2025"
-NET_SSID = "ExampleSSID"
-NET_PSK = "ExamplePSK"
+VER = "1.1 - 11th December 2025"
+NET_SSID = "ExSSID"
+NET_PSK = "ExPSK"
 
 
 def network_connect(SSID, PSK):
@@ -78,7 +78,7 @@ config = {"24hr":True,
           "leading_zeros": True}
 
 setting_names = {"24hr":"Use 24 hour time format",
-          "graph_max_time": "Max age of data used on graph (mins)",
+          "graph_max_time": "Time data range (mins)",
           "graph_axes": "Show graph axes",
           "graph_show_pts": "Show min/max values on graph",
           "graph":"Show graph",
@@ -111,7 +111,7 @@ setting_values = {"24hr": [True, False],
 
 pages = (
         ("24hr", "celsius", "leading_zeros", "ntc_upd", "font_colour", "bg_colour"),
-        ("graph", "graph_axes", "graph_show_pts", "graph_max_time", "graph_padding", "axis_colour", "line_colour", "max_colour", "min_colour"),
+        ("graph", "graph_max_time", "graph_show_pts", "graph_padding", "graph_axes", "axis_colour", "line_colour", "max_colour", "min_colour"),
         (f"Version: {VER}", f"SSID: {NET_SSID}", f"PSK: {NET_PSK}", "Display: 320x240", "Made with Micropython")
         )
 
